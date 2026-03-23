@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sparge Codul — Matematică</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #c9a84c;
+  --gold-light: #f0d060;
+  --gold-dark: #7a5c1e;
+  --wood-dark: #2d1a0a;
+  --wood-mid: #5c3317;
+  --wood-light: #8b5e3c;
+  --wood-highlight: #a87748;
+  --iron: #3a3a3a;
+  --iron-light: #5e5e5e;
+  --iron-shine: #8a8a8a;
+  --bg: #0d0905;
+  --green-glow: #39ff14;
+  --red: #cc2200;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Crimson Text', Georgia, serif;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Atmospheric background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 70%, rgba(100,60,10,0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(60,30,5,0.3) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* Dust particles */
+.particle {
+  position: fixed;
+  width: 2px; height: 2px;
+  background: rgba(201,168,76,0.4);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: float linear infinite;
+}
+@keyframes float {
+  0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 0.5; }
+  100% { transform: translateY(-10vh) translateX(var(--drift)); opacity: 0; }
+}
+
+h1 {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(1.2rem, 4vw, 2rem);
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-shadow: 0 0 30px rgba(201,168,76,0.5), 0 2px 4px rgba(0,0,0,0.8);
+  margin-bottom: 0.3rem;
+  text-align: center;
+}
+
+.subtitle {
+  font-family: 'Crimson Text', serif;
+  font-style: italic;
+  color: rgba(201,168,76,0.55);
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  margin-bottom: clamp(0.8rem, 3vw, 2.5rem);
+  text-align: center;
+}
+
+/* ── CHEST ──────────────────────────────────────── */
+.scene {
+  width: min(360px, 92vw);
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.chest-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(360px, 92vw);
+}
+
+/* Lid flips open around the hinge at its bottom */
+.chest-lid-group {
+  width: 100%;
+  transform-origin: bottom center;
+  transform: rotateX(0deg);
+  transition: transform 1.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 3;
+}
+.chest-lid-group.open {
+  transform: scaleY(0) translateY(-60px);
+  opacity: 0;
+  transition: transform 1.0s cubic-bezier(0.4,0,0.2,1), opacity 0.8s ease;
+}
+.chest-lid-group {
+  transition: transform 1.0s cubic-bezier(0.4,0,0.2,1), opacity 0.8s ease;
+}
+
+/* Gold glow spill */
+.gold-light {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  background: radial-gradient(ellipse, rgba(255,200,50,0.55) 0%, rgba(255,150,0,0.2) 40%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  transition: width 1.6s ease, height 1.6s ease;
+  z-index: 1;
+}
+.gold-light.visible { width: min(420px, 110vw); height: 180px; }
+
+/* ── PADLOCK SVG-based ──────────────────────────── */
+/* ── PADLOCK SVG-based ──────────────────────────── */
+.padlock {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  transition: transform 0.2s;
+  user-select: none;
+  position: relative;
+}
+.svg-lock:hover { opacity: 0.85; filter: brightness(1.15); }
+.svg-lock { transition: opacity 0.2s, filter 0.2s; }
+
+.padlock-shackle {
+  width: 26px;
+  height: 20px;
+  border: 5px solid var(--iron-light);
+  border-bottom: none;
+  border-radius: 13px 13px 0 0;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+  box-shadow:
+    inset 0 2px 4px rgba(255,255,255,0.1),
+    0 -2px 6px rgba(0,0,0,0.5);
+  transition: transform 0.6s cubic-bezier(0.4,0,0.2,1), border-color 0.4s, opacity 0.4s;
+  transform-origin: bottom center;
+}
+
+.padlock-body {
+  width: 38px;
+  height: 34px;
+  background: linear-gradient(160deg, var(--iron-light) 0%, var(--iron) 60%, #222 100%);
+  border-radius: 6px;
+  position: relative;
+  box-shadow:
+    0 4px 10px rgba(0,0,0,0.7),
+    inset 0 1px 3px rgba(255,255,255,0.12),
+    inset 0 -2px 6px rgba(0,0,0,0.4);
+  z-index: 2;
+}
+
+/* Keyhole */
+.padlock-body::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -46%);
+  width: 9px;
+  height: 14px;
+  background: #111;
+  border-radius: 50% 50% 2px 2px;
+  box-shadow: 0 0 4px rgba(0,0,0,0.8);
+}
+
+/* Shine stripe */
+.padlock-body::before {
+  content: '';
+  position: absolute;
+  top: 3px; left: 5px;
+  width: 6px; height: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.18), transparent);
+  border-radius: 3px;
+}
+
+/* Lock number badge */
+.lock-num {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.05em;
+}
+
+/* Unlocked state */
+.padlock.unlocked .padlock-shackle {
+  transform: rotate(-40deg) translateX(-4px);
+  border-color: var(--gold);
+  opacity: 0.7;
+}
+.padlock.unlocked .padlock-body {
+  background: linear-gradient(160deg, #4a7a30 0%, #2d5018 60%, #1a3009 100%);
+  box-shadow: 0 4px 14px rgba(60,180,20,0.35), inset 0 1px 3px rgba(255,255,255,0.1);
+}
+.padlock.unlocked .padlock-body::after {
+  background: rgba(100,200,50,0.2);
+}
+
+/* Break animation */
+.padlock.breaking {
+  animation: lockBreak 0.7s ease-out forwards;
+}
+@keyframes lockBreak {
+  0%   { transform: scale(1); }
+  20%  { transform: scale(1.3) rotate(-5deg); filter: brightness(2); }
+  50%  { transform: scale(1.1) rotate(8deg); }
+  70%  { transform: scale(0.8) rotate(-3deg); opacity: 0.6; }
+  100% { transform: scale(0) rotate(20deg); opacity: 0; }
+}
+
+/* Sparks on unlock */
+.spark {
+  position: absolute;
+  width: 4px; height: 4px;
+  background: var(--gold-light);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: spark 0.6s ease-out forwards;
+}
+@keyframes spark {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--sx), var(--sy)) scale(0); opacity: 0; }
+}
+
+/* Chest glow when open */
+
+
+/* Gold spill from open chest */
+.gold-light {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  background: radial-gradient(ellipse, rgba(255,215,0,0.6) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  transition: width 1.5s ease, height 1.5s ease;
+  z-index: 1;
+}
+.gold-light.visible {
+  width: 400px;
+  height: 200px;
+}
+
+/* ── MODAL ──────────────────────────────────────── */
+#modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+#modal-overlay.active { display: flex; }
+
+#modal {
+  background: linear-gradient(160deg, #1c1208, #0d0905 80%);
+  border: 1px solid var(--gold-dark);
+  border-radius: 12px;
+  padding: 2rem 2.5rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow:
+    0 0 0 1px rgba(201,168,76,0.1),
+    0 30px 80px rgba(0,0,0,0.9),
+    inset 0 1px 0 rgba(201,168,76,0.15);
+  position: relative;
+  animation: modalIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes modalIn {
+  from { transform: scale(0.85) translateY(20px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Decorative corner ornaments */
+#modal::before, #modal::after {
+  content: '✦';
+  position: absolute;
+  color: var(--gold-dark);
+  font-size: 14px;
+  top: 10px;
+}
+#modal::before { left: 14px; }
+#modal::after  { right: 14px; }
+
+.modal-lock-num {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  color: var(--gold-dark);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 0.3rem;
+}
+
+.modal-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.15rem;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 1.5rem;
+  text-shadow: 0 0 20px rgba(201,168,76,0.4);
+}
+
+/* Problem text */
+.problem-box {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(201,168,76,0.15);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  font-size: clamp(0.88rem, 2.5vw, 1rem);
+  color: rgba(255,255,255,0.85);
+  line-height: 1.6;
+}
+
+.problem-box .scenario {
+  color: rgba(201,168,76,0.8);
+  font-size: 0.85rem;
+  font-style: italic;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.problem-box strong {
+  color: #fff;
+  font-style: normal;
+}
+
+
+
+/* Input area */
+.input-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+@media (max-width: 400px) {
+  .input-row { flex-direction: column; }
+  #submit-btn { width: 100%; }
+}
+
+#code-input {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 6px;
+  color: var(--gold-light);
+  font-family: 'Cinzel', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.1em;
+  padding: 0.6rem 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+#code-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.12), 0 0 20px rgba(201,168,76,0.1);
+}
+#code-input.wrong {
+  border-color: var(--red);
+  animation: shake 0.4s ease;
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-8px); }
+  40%      { transform: translateX(8px); }
+  60%      { transform: translateX(-5px); }
+  80%      { transform: translateX(5px); }
+}
+
+#submit-btn {
+  background: linear-gradient(160deg, var(--gold) 0%, var(--gold-dark) 100%);
+  border: none;
+  border-radius: 6px;
+  color: var(--wood-dark);
+  font-family: 'Cinzel', serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.1s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+#submit-btn:hover  { filter: brightness(1.15); }
+#submit-btn:active { transform: scale(0.96); }
+
+#message {
+  min-height: 1.4em;
+  text-align: center;
+  font-size: 0.95rem;
+  margin-top: 0.8rem;
+  font-style: italic;
+  transition: color 0.2s;
+}
+#message.ok  { color: #5ddb20; }
+#message.err { color: #ff5544; }
+
+.close-btn {
+  position: absolute;
+  top: 10px; right: 14px;
+  background: none;
+  border: none;
+  color: rgba(201,168,76,0.3);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s;
+  line-height: 1;
+}
+.close-btn:hover { color: var(--gold); }
+
+/* ── WIN ──────────────────────────────────────────*/
+#win-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  flex-direction: column;
+  gap: 1rem;
+}
+#win-overlay.active { display: flex; }
+
+.win-title {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(1.8rem, 6vw, 3.5rem);
+  color: var(--gold-light);
+  text-shadow: 0 0 40px rgba(255,215,0,0.6), 0 0 80px rgba(255,215,0,0.3);
+  text-align: center;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { text-shadow: 0 0 40px rgba(255,215,0,0.6), 0 0 80px rgba(255,215,0,0.3); }
+  50%      { text-shadow: 0 0 60px rgba(255,215,0,0.9), 0 0 120px rgba(255,215,0,0.5); }
+}
+.win-sub {
+  font-family: 'Crimson Text', serif;
+  font-style: italic;
+  color: rgba(201,168,76,0.6);
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+/* Confetti */
+.confetti-piece {
+  position: fixed;
+  width: 8px; height: 8px;
+  pointer-events: none;
+  animation: confettiFall linear forwards;
+  z-index: 201;
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0.3; }
+}
+
+/* Progress indicator */
+.progress-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 1rem;
+}
+.prog-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--gold-dark);
+  background: transparent;
+  transition: background 0.4s, box-shadow 0.4s;
+}
+.prog-dot.done {
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(201,168,76,0.6);
+}
+</style>
+</head>
+<body>
+
+<!-- Particles -->
+<script>
+for(let i=0;i<18;i++){
+  const p=document.createElement('div');
+  p.className='particle';
+  p.style.cssText=`left:${Math.random()*100}%;animation-duration:${8+Math.random()*14}s;animation-delay:${Math.random()*12}s;--drift:${(Math.random()-0.5)*60}px;width:${1+Math.random()*2}px;height:${1+Math.random()*2}px;opacity:${0.2+Math.random()*0.4}`;
+  document.body.appendChild(p);
+}
+</script>
+
+<h1>Sparge Codul</h1>
+<p class="subtitle">Matematică · Clasa a X-a</p>
+
+<div class="scene">
+  <div class="chest-wrap" id="chestWrap">
+
+    <!-- SVG CHEST LID -->
+    <div class="chest-lid-group" id="chestLid">
+      <svg viewBox="0 0 360 130" xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" style="display:block;">
+        <defs>
+          <!-- Wood gradient lid -->
+          <linearGradient id="woodLid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#c8854a"/>
+            <stop offset="30%" stop-color="#a8622e"/>
+            <stop offset="70%" stop-color="#7a4018"/>
+            <stop offset="100%" stop-color="#4e2608"/>
+          </linearGradient>
+          <!-- Lid highlight -->
+          <radialGradient id="lidShine" cx="50%" cy="25%" r="60%">
+            <stop offset="0%" stop-color="rgba(255,200,140,0.35)"/>
+            <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+          </radialGradient>
+          <!-- Gold metal gradient -->
+          <linearGradient id="goldH" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#f5d97a"/>
+            <stop offset="35%" stop-color="#c9a040"/>
+            <stop offset="65%" stop-color="#a07828"/>
+            <stop offset="100%" stop-color="#c9a040"/>
+          </linearGradient>
+          <linearGradient id="goldV" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#b8882a"/>
+            <stop offset="30%" stop-color="#f0cc60"/>
+            <stop offset="70%" stop-color="#c9a040"/>
+            <stop offset="100%" stop-color="#b8882a"/>
+          </linearGradient>
+          <!-- Rivet gradient -->
+          <radialGradient id="rivetG" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#f5e090"/>
+            <stop offset="50%" stop-color="#c9a040"/>
+            <stop offset="100%" stop-color="#6a4a10"/>
+          </radialGradient>
+          <!-- Dark interior of open lid -->
+          <linearGradient id="lidInner" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1a0c04"/>
+            <stop offset="100%" stop-color="#3a1e08"/>
+          </linearGradient>
+          <!-- Wood grain filter -->
+          <filter id="grain">
+            <feTurbulence type="fractalNoise" baseFrequency="0.65 0.02" numOctaves="3" result="noise"/>
+            <feColorMatrix type="saturate" values="0" in="noise" result="grey"/>
+            <feBlend in="SourceGraphic" in2="grey" mode="multiply" result="blend"/>
+            <feComposite in="blend" in2="SourceGraphic" operator="in"/>
+          </filter>
+          <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+            <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(0,0,0,0.6)"/>
+          </filter>
+        </defs>
+
+        <!-- Lid interior (visible when open) -->
+        <path d="M 18 128 Q 18 40 180 28 Q 342 40 342 128 Z" fill="url(#lidInner)" opacity="0.95"/>
+
+        <!-- Main lid shape (rounded top) -->
+        <path d="M 14 128 Q 14 10 180 6 Q 346 10 346 128 Z" fill="url(#woodLid)" filter="url(#grain)"/>
+
+        <!-- Shine overlay -->
+        <path d="M 14 128 Q 14 10 180 6 Q 346 10 346 128 Z" fill="url(#lidShine)"/>
+
+        <!-- Wood planks lines on lid -->
+        <g stroke="rgba(0,0,0,0.18)" stroke-width="1" fill="none">
+          <line x1="70" y1="8" x2="50" y2="128"/>
+          <line x1="110" y1="7" x2="96" y2="128"/>
+          <line x1="150" y1="6.5" x2="142" y2="128"/>
+          <line x1="180" y1="6" x2="180" y2="128"/>
+          <line x1="210" y1="6.5" x2="218" y2="128"/>
+          <line x1="250" y1="7" x2="264" y2="128"/>
+          <line x1="290" y1="8" x2="310" y2="128"/>
+        </g>
+
+        <!-- Gold band along bottom of lid -->
+        <rect x="10" y="112" width="340" height="18" rx="3" fill="url(#goldH)"/>
+        <!-- Band highlight -->
+        <rect x="10" y="112" width="340" height="5" rx="2" fill="rgba(255,255,255,0.18)"/>
+        <!-- Band shadow -->
+        <rect x="10" y="124" width="340" height="6" rx="2" fill="rgba(0,0,0,0.25)"/>
+
+        <!-- Gold border outline lid -->
+        <path d="M 14 128 Q 14 10 180 6 Q 346 10 346 128" stroke="url(#goldV)" stroke-width="4" fill="none"/>
+
+        <!-- Top center plate -->
+        <rect x="145" y="14" width="70" height="28" rx="4" fill="url(#goldH)"/>
+        <rect x="147" y="16" width="66" height="10" rx="2" fill="rgba(255,255,255,0.18)"/>
+        <!-- Plate rivets -->
+        <circle cx="152" cy="28" r="4" fill="url(#rivetG)"/>
+        <circle cx="208" cy="28" r="4" fill="url(#rivetG)"/>
+
+        <!-- Band rivets -->
+        <circle cx="36"  cy="121" r="5.5" fill="url(#rivetG)"/>
+        <circle cx="80"  cy="121" r="5.5" fill="url(#rivetG)"/>
+        <circle cx="130" cy="121" r="5.5" fill="url(#rivetG)"/>
+        <circle cx="180" cy="121" r="5.5" fill="url(#rivetG)"/>
+        <circle cx="230" cy="121" r="5.5" fill="url(#rivetG)"/>
+        <circle cx="280" cy="121" r="5.5" fill="url(#rivetG)"/>
+        <circle cx="324" cy="121" r="5.5" fill="url(#rivetG)"/>
+
+        <!-- Hinge left -->
+        <rect x="28" y="120" width="24" height="12" rx="3" fill="url(#goldH)"/>
+        <circle cx="40" cy="126" r="4" fill="url(#rivetG)"/>
+        <!-- Hinge right -->
+        <rect x="308" y="120" width="24" height="12" rx="3" fill="url(#goldH)"/>
+        <circle cx="320" cy="126" r="4" fill="url(#rivetG)"/>
+      </svg>
+    </div>
+
+    <!-- SVG CHEST BODY -->
+    <svg viewBox="0 0 360 175" xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" style="display:block;position:relative;z-index:2;" id="chestBody">
+      <defs>
+        <linearGradient id="woodBody" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#b5733a"/>
+          <stop offset="40%" stop-color="#8a4e20"/>
+          <stop offset="100%" stop-color="#3e1c06"/>
+        </linearGradient>
+        <radialGradient id="bodyShine" cx="50%" cy="0%" r="70%">
+          <stop offset="0%" stop-color="rgba(220,160,90,0.2)"/>
+          <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+        </radialGradient>
+        <linearGradient id="bodyBottom" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#5a2e0a"/>
+          <stop offset="100%" stop-color="#1e0c02"/>
+        </linearGradient>
+        <filter id="bodyShadow">
+          <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="rgba(0,0,0,0.7)"/>
+        </filter>
+        <!-- Interior glow when open -->
+        <radialGradient id="interiorGlow" cx="50%" cy="0%" r="80%">
+          <stop offset="0%" stop-color="rgba(255,180,40,0)" id="glowStop1"/>
+          <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+        </radialGradient>
+      </defs>
+
+      <!-- Shadow under chest -->
+      <ellipse cx="180" cy="170" rx="155" ry="10" fill="rgba(0,0,0,0.45)"/>
+
+      <!-- Body rectangle -->
+      <rect x="10" y="2" width="340" height="158" rx="8" fill="url(#woodBody)" filter="url(#bodyShadow)"/>
+      <!-- Grain overlay -->
+      <rect x="10" y="2" width="340" height="158" rx="8" fill="url(#woodBody)" filter="url(#grain)" opacity="0.5"/>
+      <!-- Shine top -->
+      <rect x="10" y="2" width="340" height="158" rx="8" fill="url(#bodyShine)"/>
+
+      <!-- Wood plank lines -->
+      <g stroke="rgba(0,0,0,0.15)" stroke-width="1" fill="none">
+        <line x1="10" y1="40"  x2="350" y2="40"/>
+        <line x1="10" y1="78"  x2="350" y2="78"/>
+        <line x1="10" y1="116" x2="350" y2="116"/>
+        <line x1="60"  y1="2"  x2="60"  y2="160"/>
+        <line x1="120" y1="2"  x2="120" y2="160"/>
+        <line x1="180" y1="2"  x2="180" y2="160"/>
+        <line x1="240" y1="2"  x2="240" y2="160"/>
+        <line x1="300" y1="2"  x2="300" y2="160"/>
+      </g>
+
+      <!-- Interior glow overlay (animated on open) -->
+      <rect x="10" y="2" width="340" height="158" rx="8" fill="url(#interiorGlow)" id="interiorGlowRect"/>
+
+      <!-- Gold horizontal band top -->
+      <rect x="10" y="8"  width="340" height="16" rx="2" fill="url(#goldH)"/>
+      <rect x="10" y="8"  width="340" height="5"  rx="1" fill="rgba(255,255,255,0.2)"/>
+
+      <!-- Gold horizontal band middle -->
+      <rect x="10" y="74" width="340" height="16" rx="2" fill="url(#goldH)"/>
+      <rect x="10" y="74" width="340" height="5"  rx="1" fill="rgba(255,255,255,0.15)"/>
+
+      <!-- Gold horizontal band bottom -->
+      <rect x="10" y="138" width="340" height="16" rx="2" fill="url(#goldH)"/>
+      <rect x="10" y="138" width="340" height="5"  rx="1" fill="rgba(255,255,255,0.15)"/>
+
+      <!-- Gold vertical strips -->
+      <rect x="10"  y="2" width="14" height="158" rx="3" fill="url(#goldV)"/>
+      <rect x="336" y="2" width="14" height="158" rx="3" fill="url(#goldV)"/>
+
+      <!-- Corner brackets TL -->
+      <rect x="8"  y="1"  width="32" height="32" rx="4" fill="url(#goldH)" opacity="0.9"/>
+      <rect x="10" y="3"  width="28" height="10" rx="2" fill="rgba(255,255,255,0.25)"/>
+      <circle cx="24" cy="17" r="6" fill="url(#rivetG)"/>
+      <!-- Corner brackets TR -->
+      <rect x="320" y="1"  width="32" height="32" rx="4" fill="url(#goldH)" opacity="0.9"/>
+      <rect x="322" y="3"  width="28" height="10" rx="2" fill="rgba(255,255,255,0.25)"/>
+      <circle cx="336" cy="17" r="6" fill="url(#rivetG)"/>
+      <!-- Corner brackets BL -->
+      <rect x="8"   y="130" width="32" height="32" rx="4" fill="url(#goldH)" opacity="0.9"/>
+      <circle cx="24" cy="146" r="6" fill="url(#rivetG)"/>
+      <!-- Corner brackets BR -->
+      <rect x="320" y="130" width="32" height="32" rx="4" fill="url(#goldH)" opacity="0.9"/>
+      <circle cx="336" cy="146" r="6" fill="url(#rivetG)"/>
+
+      <!-- Band rivets top -->
+      <circle cx="50"  cy="16" r="5" fill="url(#rivetG)"/>
+      <circle cx="100" cy="16" r="5" fill="url(#rivetG)"/>
+      <circle cx="180" cy="16" r="5" fill="url(#rivetG)"/>
+      <circle cx="260" cy="16" r="5" fill="url(#rivetG)"/>
+      <circle cx="310" cy="16" r="5" fill="url(#rivetG)"/>
+
+      <!-- Band rivets middle -->
+      <circle cx="50"  cy="82" r="5" fill="url(#rivetG)"/>
+      <circle cx="100" cy="82" r="5" fill="url(#rivetG)"/>
+      <circle cx="260" cy="82" r="5" fill="url(#rivetG)"/>
+      <circle cx="310" cy="82" r="5" fill="url(#rivetG)"/>
+
+      <!-- Band rivets bottom -->
+      <circle cx="50"  cy="146" r="5" fill="url(#rivetG)"/>
+      <circle cx="100" cy="146" r="5" fill="url(#rivetG)"/>
+      <circle cx="180" cy="146" r="5" fill="url(#rivetG)"/>
+      <circle cx="260" cy="146" r="5" fill="url(#rivetG)"/>
+      <circle cx="310" cy="146" r="5" fill="url(#rivetG)"/>
+
+      <!-- Center plate / clasp area -->
+      <rect x="140" y="68" width="80" height="30" rx="5" fill="url(#goldH)"/>
+      <rect x="142" y="70" width="76" height="10" rx="3" fill="rgba(255,255,255,0.2)"/>
+      <circle cx="180" cy="84" r="8" fill="url(#rivetG)"/>
+      <circle cx="162" cy="84" r="4" fill="url(#rivetG)"/>
+      <circle cx="198" cy="84" r="4" fill="url(#rivetG)"/>
+
+      <!-- LOCKS row — 3 padlocks as SVG inline groups -->
+      <!-- Lock 1 -->
+      <g id="lock1" onclick="openModal(1)" style="cursor:pointer" class="svg-lock">
+        <g id="lock1-shackle" style="transform-origin:78px 104px; transition: transform 0.6s cubic-bezier(0.4,0,0.2,1)">
+          <path d="M 66 108 L 66 96 Q 66 86 78 86 Q 90 86 90 96 L 90 108" stroke="#8a8a8a" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <path d="M 66 108 L 66 96 Q 66 86 78 86 Q 90 86 90 96 L 90 108" stroke="#5e5e5e" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M 68 107 L 68 96 Q 68 89 78 89 Q 88 89 88 96 L 88 107" stroke="rgba(255,255,255,0.12)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </g>
+        <rect id="lock1-body" x="60" y="106" width="36" height="30" rx="5" fill="url(#ironGrad)"/>
+        <rect x="62" y="108" width="8" height="16" rx="2" fill="rgba(255,255,255,0.1)"/>
+        <!-- keyhole -->
+        <circle cx="78" cy="118" r="5" fill="#1a1a1a"/>
+        <rect x="76" y="120" width="4" height="7" rx="1" fill="#1a1a1a"/>
+        <text x="78" y="131" text-anchor="middle" font-family="Cinzel,serif" font-size="7" fill="rgba(255,255,255,0.4)" font-weight="700">I</text>
+      </g>
+
+      <!-- Lock 2 -->
+      <g id="lock2" onclick="openModal(2)" style="cursor:pointer" class="svg-lock">
+        <g id="lock2-shackle" style="transform-origin:180px 104px; transition: transform 0.6s cubic-bezier(0.4,0,0.2,1)">
+          <path d="M 168 108 L 168 96 Q 168 86 180 86 Q 192 86 192 96 L 192 108" stroke="#8a8a8a" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <path d="M 168 108 L 168 96 Q 168 86 180 86 Q 192 86 192 96 L 192 108" stroke="#5e5e5e" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M 170 107 L 170 96 Q 170 89 180 89 Q 190 89 190 96 L 190 107" stroke="rgba(255,255,255,0.12)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </g>
+        <rect id="lock2-body" x="162" y="106" width="36" height="30" rx="5" fill="url(#ironGrad)"/>
+        <rect x="164" y="108" width="8" height="16" rx="2" fill="rgba(255,255,255,0.1)"/>
+        <circle cx="180" cy="118" r="5" fill="#1a1a1a"/>
+        <rect x="178" y="120" width="4" height="7" rx="1" fill="#1a1a1a"/>
+        <text x="180" y="131" text-anchor="middle" font-family="Cinzel,serif" font-size="7" fill="rgba(255,255,255,0.4)" font-weight="700">II</text>
+      </g>
+
+      <!-- Lock 3 -->
+      <g id="lock3" onclick="openModal(3)" style="cursor:pointer" class="svg-lock">
+        <g id="lock3-shackle" style="transform-origin:282px 104px; transition: transform 0.6s cubic-bezier(0.4,0,0.2,1)">
+          <path d="M 270 108 L 270 96 Q 270 86 282 86 Q 294 86 294 96 L 294 108" stroke="#8a8a8a" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <path d="M 270 108 L 270 96 Q 270 86 282 86 Q 294 86 294 96 L 294 108" stroke="#5e5e5e" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M 272 107 L 272 96 Q 272 89 282 89 Q 292 89 292 96 L 292 107" stroke="rgba(255,255,255,0.12)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </g>
+        <rect id="lock3-body" x="264" y="106" width="36" height="30" rx="5" fill="url(#ironGrad)"/>
+        <rect x="266" y="108" width="8" height="16" rx="2" fill="rgba(255,255,255,0.1)"/>
+        <circle cx="282" cy="118" r="5" fill="#1a1a1a"/>
+        <rect x="280" y="120" width="4" height="7" rx="1" fill="#1a1a1a"/>
+        <text x="282" y="131" text-anchor="middle" font-family="Cinzel,serif" font-size="7" fill="rgba(255,255,255,0.4)" font-weight="700">III</text>
+      </g>
+
+      <!-- Shared iron gradient defs -->
+      <defs>
+        <linearGradient id="ironGrad" x1="0" y1="0" x2="0.3" y2="1">
+          <stop offset="0%" stop-color="#7a7a7a"/>
+          <stop offset="40%" stop-color="#4a4a4a"/>
+          <stop offset="100%" stop-color="#1e1e1e"/>
+        </linearGradient>
+        <linearGradient id="ironGradGreen" x1="0" y1="0" x2="0.3" y2="1">
+          <stop offset="0%" stop-color="#4a8a2a"/>
+          <stop offset="40%" stop-color="#2d5c18"/>
+          <stop offset="100%" stop-color="#142a08"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Gold border outline body -->
+      <rect x="10" y="2" width="340" height="158" rx="8" stroke="url(#goldV)" stroke-width="3" fill="none"/>
+    </svg>
+
+    <div class="gold-light" id="goldLight"></div>
+  </div>
+</div>
+
+<!-- Progress -->
+<!-- Progress -->
+<div class="progress-bar">
+  <div class="prog-dot" id="dot1"></div>
+  <div class="prog-dot" id="dot2"></div>
+  <div class="prog-dot" id="dot3"></div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <button class="close-btn" onclick="closeModal()">✕</button>
+    <div class="modal-lock-num" id="modalLockNum">Lacăt I · Permutări</div>
+    <div class="modal-title" id="modalTitle">Rezolvă problema pentru a sparge lacătul</div>
+
+    <div class="problem-box" id="problemBox">
+      <!-- filled by JS -->
+    </div>
+    </div>
+
+    <div class="input-row">
+      <input type="number" id="code-input" placeholder="?" autocomplete="off" min="0">
+      <button id="submit-btn" onclick="checkCode()">Verifică</button>
+    </div>
+    <p id="message"></p>
+  </div>
+</div>
+
+<!-- WIN -->
+<div id="win-overlay">
+  <div class="win-title">⚔️ Cuferarul a Căzut! ⚔️</div>
+  <p class="win-sub">Toate lacătele au fost sparte.<br>Cunoașterea e liberă!</p>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────
+const problems = {
+  1: {
+    lockLabel: 'Lacăt I · Permutări',
+    title: 'Câte fotografii de grup sunt posibile?',
+    scenario: '📸 Scenariul:',
+    text: `La finalul anului, <strong>4 elevi</strong> din clasa voastră vor să facă o poză de grup în care stau toți <strong>la rând</strong>.<br><br>
+    Câte fotografii <strong>diferite</strong> pot obține, dacă fiecare ordine diferită înseamnă o fotografie diferită?`,
+    answer: 24
+  },
+  2: {
+    lockLabel: 'Lacăt II · Aranjamente',
+    title: 'Câte moduri de a se așeza în STB?',
+    scenario: '🚌 Scenariul:',
+    text: `Urcați în STB după școală. În autobuz mai sunt libere exact <strong>6 locuri pe scaune</strong>.<br><br>
+    Voi sunteți <strong>4 elevi</strong> și fiecare vrea să stea pe un scaun diferit. Contează cine stă unde — locul de la geam nu e același cu cel de la culoar!<br><br>
+    În câte moduri distincte se pot așeza cei <strong>4 elevi</strong> pe cele <strong>6 locuri</strong>?`,
+    answer: 360
+  },
+  3: {
+    lockLabel: 'Lacăt III · Combinări',
+    title: 'Câte echipe se pot forma?',
+    scenario: '⚙️ Scenariul:',
+    text: `Directorul vrea să formeze o <strong>comisie de 3 elevi</strong> din clasa voastră de <strong>10</strong>, pentru a reprezenta liceul la un târg tehnic.<br><br>
+    În comisie toți au același rol, <strong>ordinea nu contează</strong>. Câte comisii diferite se pot forma?`,
+    answer: 120
+  }
+};
+
+let currentLock = 0;
+let unlocked = new Set();
+
+// ─── MODAL ───────────────────────────────────────────────
+function openModal(n) {
+  if (unlocked.has(n)) return;
+  currentLock = n;
+  const p = problems[n];
+  document.getElementById('modalLockNum').textContent = p.lockLabel;
+  document.getElementById('modalTitle').textContent = p.title;
+  document.getElementById('problemBox').innerHTML =
+    `<span class="scenario">${p.scenario}</span>${p.text}`;
+  const inp = document.getElementById('code-input');
+  inp.value = '';
+  inp.classList.remove('wrong');
+  inp.disabled = false;
+  document.getElementById('submit-btn').disabled = false;
+
+  const msg = document.getElementById('message');
+  msg.textContent = '';
+  msg.className = '';
+
+  document.getElementById('modal-overlay').classList.add('active');
+  setTimeout(() => inp.focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('active');
+}
+
+
+// ─── CHECK ───────────────────────────────────────────────
+function checkCode() {
+  const inp = document.getElementById('code-input');
+  const msg = document.getElementById('message');
+  const val = parseInt(inp.value.trim(), 10);
+  const correct = problems[currentLock].answer;
+
+  if (val === correct) {
+    msg.textContent = '✓ Corect! Lacătul cedează...';
+    msg.className = 'ok';
+    inp.disabled = true;
+    document.getElementById('submit-btn').disabled = true;
+    setTimeout(() => {
+      closeModal();
+      breakLock(currentLock);
+    }, 900);
+  } else {
+    msg.className = 'err';
+    if (isNaN(val)) {
+      msg.textContent = 'Introdu un număr.';
+    } else if (val < correct) {
+      msg.textContent = '✗ Prea mic. Mai gândește-te...';
+    } else {
+      msg.textContent = '✗ Prea mare. Verifică calculele.';
+    }
+    inp.classList.add('wrong');
+    setTimeout(() => inp.classList.remove('wrong'), 500);
+    inp.disabled = false;
+    document.getElementById('submit-btn').disabled = false;
+  }
+}
+
+// ─── BREAK LOCK ──────────────────────────────────────────
+function breakLock(n) {
+  const lockG = document.getElementById('lock' + n);
+  const dot   = document.getElementById('dot' + n);
+
+  // Sparks
+  for (let i = 0; i < 12; i++) {
+    const s = document.createElement('div');
+    s.className = 'spark';
+    const rect = lockG.closest('svg').getBoundingClientRect();
+    const cx = rect.left + (n===1?78:n===2?180:282) * rect.width/360;
+    const cy = rect.top  + 120 * rect.height/175;
+    s.style.cssText = `left:${cx}px;top:${cy}px;--sx:${(Math.random()-0.5)*70}px;--sy:${(Math.random()-0.5)*70}px;animation-delay:${Math.random()*0.12}s;background:${['#ffd700','#fff','#c9a84c','#ffaa00'][Math.floor(Math.random()*4)]};`;
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 900);
+  }
+
+  // Rotate shackle open
+  const shackle = document.getElementById('lock'+n+'-shackle');
+  shackle.style.transform = 'rotate(-42deg)';
+
+  // Turn body green
+  const body = document.getElementById('lock'+n+'-body');
+  body.setAttribute('fill', 'url(#ironGradGreen)');
+
+  // Green glow on body
+  body.style.filter = 'drop-shadow(0 0 8px rgba(80,200,40,0.6))';
+
+  dot.classList.add('done');
+  unlocked.add(n);
+
+  if (unlocked.size === 3) {
+    setTimeout(openChest, 700);
+  }
+}
+
+// ─── OPEN CHEST ──────────────────────────────────────────
+function openChest() {
+  const lid = document.getElementById('chestLid');
+  lid.classList.add('open');
+  document.getElementById('goldLight').classList.add('visible');
+
+  // Reveal glowing interior after lid fades
+  const g1 = document.getElementById('glowStop1');
+  if (g1) {
+    setTimeout(() => { g1.setAttribute('stop-color','rgba(255,180,40,0.6)'); }, 500);
+  }
+  // Show sparkling treasure after lid is gone
+  setTimeout(() => {
+    const body = document.getElementById('chestBody');
+    if (body) body.style.filter = 'drop-shadow(0 0 18px rgba(255,200,50,0.7))';
+  }, 700);
+  setTimeout(showWin, 1800);
+}
+
+function showWin() {
+  document.getElementById('win-overlay').classList.add('active');
+  spawnConfetti();
+}
+
+function spawnConfetti() {
+  const colors = ['#ffd700','#c9a84c','#fff','#f0d060','#ff9900','#ffcc00'];
+  for (let i = 0; i < 80; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    const size = 6 + Math.random() * 8;
+    c.style.cssText = `
+      left:${Math.random()*100}%;
+      top:0;
+      width:${size}px; height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random()>0.5?'50%':'2px'};
+      animation-duration:${2+Math.random()*3}s;
+      animation-delay:${Math.random()*1.5}s;
+    `;
+    document.getElementById('win-overlay').appendChild(c);
+  }
+}
+
+// ─── KEYBOARD ────────────────────────────────────────────
+document.getElementById('code-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkCode();
+  const inp = e.target;
+  inp.disabled = false;
+  document.getElementById('submit-btn').disabled = false;
+});
+
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+window.addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+</script>
+</body>
+</html>
