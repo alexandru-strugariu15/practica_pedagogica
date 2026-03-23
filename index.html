@@ -287,6 +287,8 @@ h1 {
   justify-content: center;
   z-index: 100;
   backdrop-filter: blur(4px);
+  padding: 1rem;
+  box-sizing: border-box;
 }
 #modal-overlay.active { display: flex; }
 
@@ -294,9 +296,15 @@ h1 {
   background: linear-gradient(160deg, #1c1208, #0d0905 80%);
   border: 1px solid var(--gold-dark);
   border-radius: 12px;
-  padding: 2rem 2.5rem;
-  max-width: 500px;
-  width: 90%;
+  padding: 1.5rem;
+  max-width: 480px;
+  width: 94vw;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 92vh;
+  overflow-y: auto;
   box-shadow:
     0 0 0 1px rgba(201,168,76,0.1),
     0 30px 80px rgba(0,0,0,0.9),
@@ -345,7 +353,8 @@ h1 {
   border: 1px solid rgba(201,168,76,0.15);
   border-radius: 8px;
   padding: 0.8rem 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem;
+  word-break: break-word;
   font-size: clamp(0.88rem, 2.5vw, 1rem);
   color: rgba(255,255,255,0.85);
   line-height: 1.6;
@@ -369,14 +378,13 @@ h1 {
 /* Input area */
 .input-row {
   display: flex;
-  gap: 0.6rem;
-  align-items: stretch;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 0.5rem;
+  width: 100%;
 }
-@media (max-width: 400px) {
-  .input-row { flex-direction: column; }
-  #submit-btn { width: 100%; }
-}
+#submit-btn { width: 100%; box-sizing: border-box; }
+#code-input { width: 100%; box-sizing: border-box; }
 
 #code-input {
   flex: 1;
@@ -834,7 +842,6 @@ for(let i=0;i<18;i++){
 
     <div class="problem-box" id="problemBox">
       <!-- filled by JS -->
-    </div>
     </div>
 
     <div class="input-row">
